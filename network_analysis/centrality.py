@@ -36,13 +36,13 @@ def compute_centrality(G: nx.DiGraph, label: str = "") -> pd.DataFrame:
     df : DataFrame with one row per node, all centrality scores
     """
     if G.number_of_nodes() == 0:
-        print(f"  ⚠️  {label} graph is empty; skipping centrality.")
+        print(f"   {label} graph is empty; skipping centrality.")
         return pd.DataFrame(columns=[
             "node","in_degree","out_degree","betweenness",
             "closeness","pagerank","eigenvector","hub_score","authority_score"
         ])
 
-    print(f"  🔢 Computing centrality for {label} ({G.number_of_nodes()} nodes)...")
+    print(f"   Computing centrality for {label} ({G.number_of_nodes()} nodes)...")
 
     # In/out degree (normalised)
     n = G.number_of_nodes()
