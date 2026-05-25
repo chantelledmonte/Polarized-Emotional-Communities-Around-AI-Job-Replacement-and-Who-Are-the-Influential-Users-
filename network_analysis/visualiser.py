@@ -45,7 +45,7 @@ def visualise_network(
     figsize      : matplotlib figure size
     """
     if G.number_of_nodes() == 0:
-        print(f"  ⚠️  {title}: empty graph, skipping visualisation.")
+        print(f"    {title}: empty graph, skipping visualisation.")
         return
 
     # Subsample if needed
