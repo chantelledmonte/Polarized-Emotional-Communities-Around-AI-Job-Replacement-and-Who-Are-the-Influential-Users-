@@ -1,0 +1,16 @@
+community,n_users,n_posts,mean_sentiment,std_sentiment,pct_positive,pct_negative,pct_neutral,sentiment_label,polarized
+0,1,1,0.743,,1.0,0.0,0.0,Positive,True
+1,1,1,0.8402,,1.0,0.0,0.0,Positive,True
+2,1,1,0.0,,0.0,0.0,1.0,Neutral,False
+3,1,1,0.0943,,1.0,0.0,0.0,Positive,False
+4,1,1,-0.624,,0.0,1.0,0.0,Negative,True
+5,1,1,-0.6597,,0.0,1.0,0.0,Negative,True
+6,1,1,-0.2732,,0.0,1.0,0.0,Negative,True
+7,1,1,-0.0534,,0.0,1.0,0.0,Negative,False
+8,1,1,-0.7105,,0.0,1.0,0.0,Negative,True
+9,1,1,0.6369,,1.0,0.0,0.0,Positive,True
+10,1,1,0.8481,,1.0,0.0,0.0,Positive,True
+11,13,15,0.0094,0.4882,0.467,0.467,0.067,Neutral,False
+12,1,1,-0.4168,,0.0,1.0,0.0,Negative,True
+13,2,3,-0.1529,0.2649,0.0,0.333,0.667,Negative,False
+14,1,1,0.6897,,1.0,0.0,0.0,Positive,True

@@ -1,0 +1,2 @@
+community,n_users,n_posts,mean_sentiment,std_sentiment,pct_positive,pct_negative,pct_neutral,sentiment_label
+11,13,15,0.0094,0.4882,0.467,0.467,0.067,Neutral
