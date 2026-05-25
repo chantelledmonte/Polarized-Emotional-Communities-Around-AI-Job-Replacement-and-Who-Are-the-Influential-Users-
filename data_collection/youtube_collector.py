@@ -1,223 +1,3 @@
-# """
-# YouTube Data Collector
-# ======================
-# Collects video metadata and comment threads using the YouTube Data API v3.
-
-# Nodes  : users (commenters / video authors)
-# Edges  : reply relationships (A replied to B within a comment thread)
-
-# Required: YOUTUBE_API_KEY environment variable or passed directly.
-# """
-
-# import time
-# import requests
-# import pandas as pd
-# from datetime import datetime
-
-
-# class YouTubeCollector:
-#     BASE_URL = "https://www.googleapis.com/youtube/v3"
-
-#     def __init__(self, api_key: str):
-#         if not api_key or api_key == "YOUR_YOUTUBE_API_KEY_HERE":
-#             raise ValueError(
-#                 "YouTube API key is missing. "
-#                 "Set YOUTUBE_API_KEY env var or pass it directly."
-#             )
-#         self.api_key = api_key
-
-#     # ── Internal helpers ───────────────────────────────────────────────────────
-
-#     def _get(self, endpoint: str, params: dict) -> dict:
-#         params["key"] = self.api_key
-#         resp = requests.get(f"{self.BASE_URL}/{endpoint}", params=params, timeout=15)
-#         resp.raise_for_status()
-#         return resp.json()
-
-#     def search_videos(self, query: str, max_results: int = 10) -> list[dict]:
-#         """Search for videos matching a query. Returns list of video dicts."""
-#         params = {
-#             "part": "snippet",
-#             "q": query,
-#             "type": "video",
-#             "maxResults": min(max_results, 50),
-#             "relevanceLanguage": "en",
-#             "order": "relevance",
-#         }
-#         data = self._get("search", params)
-#         videos = []
-#         for item in data.get("items", []):
-#             videos.append({
-#                 "video_id": item["id"]["videoId"],
-#                 "title": item["snippet"]["title"],
-#                 "channel_id": item["snippet"]["channelId"],
-#                 "channel_title": item["snippet"]["channelTitle"],
-#                 "published_at": item["snippet"]["publishedAt"],
-#                 "description": item["snippet"].get("description", "")[:500],
-#                 "query": query,
-#             })
-#         return videos
-
-#     def get_video_stats(self, video_ids: list[str]) -> dict:
-#         """Fetch view/like/comment counts for a batch of video IDs."""
-#         params = {
-#             "part": "statistics",
-#             "id": ",".join(video_ids[:50]),
-#         }
-#         data = self._get("videos", params)
-#         stats = {}
-#         for item in data.get("items", []):
-#             s = item.get("statistics", {})
-#             stats[item["id"]] = {
-#                 "view_count": int(s.get("viewCount", 0)),
-#                 "like_count": int(s.get("likeCount", 0)),
-#                 "comment_count": int(s.get("commentCount", 0)),
-#             }
-#         return stats
-
-#     def get_comments(self, video_id: str, max_comments: int = 200) -> list[dict]:
-#         """
-#         Collect top-level comments and replies for a video.
-#         Returns flat list of comment dicts with reply chain info.
-#         """
-#         comments = []
-#         page_token = None
-#         fetched = 0
-
-#         while fetched < max_comments:
-#             params = {
-#                 "part": "snippet,replies",
-#                 "videoId": video_id,
-#                 "maxResults": min(100, max_comments - fetched),
-#                 "order": "relevance",
-#                 "textFormat": "plainText",
-#             }
-#             if page_token:
-#                 params["pageToken"] = page_token
-
-#             try:
-#                 data = self._get("commentThreads", params)
-#             except requests.HTTPError as e:
-#                 if e.response.status_code == 403:
-#                     # Comments disabled on this video
-#                     break
-#                 raise
-
-#             for thread in data.get("items", []):
-#                 top = thread["snippet"]["topLevelComment"]["snippet"]
-#                 top_id = thread["snippet"]["topLevelComment"]["id"]
-#                 top_author_id = top.get("authorChannelId", {}).get("value", "unknown")
-
-#                 comments.append({
-#                     "comment_id": top_id,
-#                     "video_id": video_id,
-#                     "text": top.get("textDisplay", ""),
-#                     "author_name": top.get("authorDisplayName", ""),
-#                     "author_id": top_author_id,
-#                     "like_count": top.get("likeCount", 0),
-#                     "published_at": top.get("publishedAt", ""),
-#                     "is_reply": False,
-#                     "parent_id": None,
-#                     "parent_author_id": None,
-#                 })
-#                 fetched += 1
-
-#                 # Collect replies
-#                 for reply in thread.get("replies", {}).get("comments", []):
-#                     rs = reply["snippet"]
-#                     reply_author_id = rs.get("authorChannelId", {}).get("value", "unknown")
-#                     comments.append({
-#                         "comment_id": reply["id"],
-#                         "video_id": video_id,
-#                         "text": rs.get("textDisplay", ""),
-#                         "author_name": rs.get("authorDisplayName", ""),
-#                         "author_id": reply_author_id,
-#                         "like_count": rs.get("likeCount", 0),
-#                         "published_at": rs.get("publishedAt", ""),
-#                         "is_reply": True,
-#                         "parent_id": top_id,
-#                         "parent_author_id": top_author_id,
-#                     })
-
-#             page_token = data.get("nextPageToken")
-#             if not page_token:
-#                 break
-#             time.sleep(0.3)  # be polite to the API
-
-#         return comments
-
-#     # ── Public API ─────────────────────────────────────────────────────────────
-
-#     def collect(
-#         self,
-#         queries: list[str],
-#         max_videos: int = 10,
-#         max_comments: int = 200,
-#     ) -> tuple[pd.DataFrame, pd.DataFrame]:
-#         """
-#         Main collection method.
-
-#         Returns
-#         -------
-#         df_videos   : DataFrame of video metadata + stats
-#         df_comments : DataFrame of comments with reply chain info
-#         """
-#         all_videos = []
-#         all_comments = []
-#         seen_video_ids = set()
-
-#         for query in queries:
-#             print(f"  🔍 Searching YouTube: '{query}'")
-#             videos = self.search_videos(query, max_results=max_videos)
-
-#             for v in videos:
-#                 if v["video_id"] in seen_video_ids:
-#                     continue
-#                 seen_video_ids.add(v["video_id"])
-#                 all_videos.append(v)
-
-#             time.sleep(0.5)
-
-#         if not all_videos:
-#             raise RuntimeError("No YouTube videos found. Check API key and queries.")
-
-#         # Fetch stats in batches of 50
-#         video_ids = [v["video_id"] for v in all_videos]
-#         stats = {}
-#         for i in range(0, len(video_ids), 50):
-#             stats.update(self.get_video_stats(video_ids[i:i+50]))
-
-#         for v in all_videos:
-#             v.update(stats.get(v["video_id"], {}))
-
-#         df_videos = pd.DataFrame(all_videos)
-
-#         # Sort by comment count descending — most active videos first
-#         if "comment_count" in df_videos.columns:
-#             df_videos = df_videos.sort_values("comment_count", ascending=False)
-
-#         print(f"  📹 Fetching comments for {len(df_videos)} videos...")
-#         for _, row in df_videos.iterrows():
-#             vid = row["video_id"]
-#             print(f"    → {vid}: {row.get('title','')[:60]}")
-#             cmts = self.get_comments(vid, max_comments=max_comments)
-#             all_comments.extend(cmts)
-#             time.sleep(0.5)
-
-#         df_comments = pd.DataFrame(all_comments)
-#         df_comments = df_comments.drop_duplicates(subset=["comment_id"])
-#         df_comments["collected_at"] = datetime.utcnow().isoformat()
-
-#         print(f"  ✅ YouTube: {len(df_videos)} videos, {len(df_comments)} comments")
-#         return df_videos, df_comments
-
-
-
-
-
-
-
-
 
 """
 YouTube Data Collector
@@ -262,7 +42,7 @@ class YouTubeCollector:
             )
         self._api_key = api_key  # private — never printed
 
-    # ── Internal helpers ───────────────────────────────────────────────────────
+    # Internal helpers 
 
     def _get(self, endpoint: str, params: dict) -> dict:
         """
@@ -283,7 +63,7 @@ class YouTubeCollector:
                         "HTTP %s on attempt %d — retrying in %.1fs",
                         resp.status_code, attempt, wait,
                     )
-                    print(f"  ⚠️  Rate limit / server error (HTTP {resp.status_code}) "
+                    print(f" Rate limit / server error (HTTP {resp.status_code}) "
                           f"— waiting {wait:.1f}s (attempt {attempt}/{MAX_RETRIES})")
                     time.sleep(wait)
                     continue
@@ -293,7 +73,7 @@ class YouTubeCollector:
 
             except requests.Timeout:
                 wait = BASE_BACKOFF ** attempt
-                print(f"  ⚠️  Timeout — retrying in {wait:.1f}s (attempt {attempt}/{MAX_RETRIES})")
+                print(f"Timeout — retrying in {wait:.1f}s (attempt {attempt}/{MAX_RETRIES})")
                 time.sleep(wait)
 
             except requests.HTTPError as e:
@@ -376,7 +156,7 @@ class YouTubeCollector:
                 data = self._get("commentThreads", params)
             except requests.HTTPError as e:
                 if e.response.status_code == 403:
-                    print(f"    ℹ️  Comments disabled on {video_id} — skipping")
+                    print(f" Comments disabled on {video_id} — skipping")
                     break
                 raise
 
@@ -427,7 +207,7 @@ class YouTubeCollector:
 
         return comments
 
-    # ── Public API ─────────────────────────────────────────────────────────────
+    #  Public API 
 
     def collect(
         self,
@@ -459,11 +239,11 @@ class YouTubeCollector:
         seen_video_ids = set()
 
         for query in queries:
-            print(f"  🔍 Searching YouTube: '{query}'")
+            print(f"Searching YouTube: '{query}'")
             try:
                 videos = self.search_videos(query, max_results=max_videos)
             except Exception as e:
-                print(f"  ⚠️  Search failed for '{query}': {e}")
+                print(f"Search failed for '{query}': {e}")
                 continue
 
             for v in videos:
@@ -482,7 +262,7 @@ class YouTubeCollector:
             try:
                 stats.update(self.get_video_stats(video_ids[i:i+50]))
             except Exception as e:
-                print(f"  ⚠️  Stats fetch failed for batch: {e}")
+                print(f" Stats fetch failed for batch: {e}")
         for v in all_videos:
             v.update(stats.get(v["video_id"], {}))
 
@@ -490,7 +270,7 @@ class YouTubeCollector:
         if "comment_count" in df_videos.columns:
             df_videos = df_videos.sort_values("comment_count", ascending=False)
 
-        print(f"  📹 Fetching comments for {len(df_videos)} videos...")
+        print(f"Fetching comments for {len(df_videos)} videos...")
         for _, row in df_videos.iterrows():
             vid = row["video_id"]
             print(f"    → {vid}: {str(row.get('title',''))[:55]}")
@@ -498,7 +278,7 @@ class YouTubeCollector:
                 cmts = self.get_comments(vid, max_comments=max_comments)
                 all_comments.extend(cmts)
             except Exception as e:
-                print(f"    ⚠️  Comment fetch failed for {vid}: {e}")
+                print(f" Comment fetch failed for {vid}: {e}")
             time.sleep(0.5)
 
         df_comments = pd.DataFrame(all_comments)
@@ -508,7 +288,7 @@ class YouTubeCollector:
         n_raw = len(df_comments)
         n_null_authors = df_comments["author_id"].isna().sum()
 
-        # ── FIX Gap 1: document sampling decision ─────────────────────────────
+        #FIX Gap 1: document sampling decision 
         if network_sample_size and n_raw > network_sample_size:
             # Stratified: keep all reply rows (needed for edges), sample top-levels
             replies    = df_comments[df_comments["is_reply"] == True]
@@ -519,15 +299,15 @@ class YouTubeCollector:
                 random_state=random_seed
             )
             df_comments = pd.concat([top_sample, replies]).reset_index(drop=True)
-            print(f"\n  📐 SAMPLING NOTE (document in report):")
+            print(f"\nSAMPLING NOTE (document in report):")
             print(f"     Raw collected : {n_raw:,} comments")
             print(f"     Sampled to    : {len(df_comments):,} (seed={random_seed})")
             print(f"     Strategy      : keep all {len(replies):,} replies (for edges) "
                   f"+ random sample of {len(top_sample):,} top-level comments")
             print(f"     Reason        : network analysis feasibility & graph density")
         else:
-            print(f"\n  📐 No sampling applied — using full dataset ({n_raw:,} comments)")
+            print(f"\n No sampling applied — using full dataset ({n_raw:,} comments)")
 
-        print(f"  ✅ YouTube: {len(df_videos)} videos, {len(df_comments)} comments")
+        print(f" YouTube: {len(df_videos)} videos, {len(df_comments)} comments")
         print(f"     Null/anonymous authors dropped from graph: {n_null_authors}")
         return df_videos, df_comments
