@@ -206,10 +206,10 @@ Run all cells from top to bottom.
 Do polarized emotional communities form around AI job replacement discussions on YouTube, and who are the influential users shaping these communities?
 
 **Success Criteria:**
-1. ✅ At least 2 distinct communities detected with significantly different mean sentiment scores
-2. ✅ Identifiable Bridge users (high betweenness) connecting otherwise separate communities
-3. ✅ Topic modelling reveals distinct frames (fear vs optimism vs policy) across communities
-4. ✅ Cross-platform comparison shows whether YouTube and Bluesky communities differ in polarisation level
+1.  At least 2 distinct communities detected with significantly different mean sentiment scores
+2.  Identifiable Bridge users (high betweenness) connecting otherwise separate communities
+3.  Topic modelling reveals distinct frames (fear vs optimism vs policy) across communities
+4.  Cross-platform comparison shows whether YouTube and Bluesky communities differ in polarisation level
 
 ---
 
