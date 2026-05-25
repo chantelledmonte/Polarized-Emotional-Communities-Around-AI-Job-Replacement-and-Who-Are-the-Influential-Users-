@@ -39,14 +39,14 @@ def detect_communities(
     partition   : dict mapping node → community_id
     """
     if G.number_of_nodes() == 0:
-        print(f"  ⚠️  {label} graph empty; no communities.")
+        print(f"    {label} graph empty; no communities.")
         return G, {}
 
     G_und = G.to_undirected()
 
     if community_louvain is None:
         # Fallback: greedy modularity
-        print(f"  ⚠️  python-louvain not installed; using greedy modularity for {label}.")
+        print(f"    python-louvain not installed; using greedy modularity for {label}.")
         communities = nx.community.greedy_modularity_communities(G_und)
         partition = {}
         for cid, comm in enumerate(communities):
@@ -60,7 +60,7 @@ def detect_communities(
     n_communities = len(set(partition.values()))
     modularity = _compute_modularity(G_und, partition)
 
-    print(f"  🔵 {label}: {n_communities} communities detected  "
+    print(f"   {label}: {n_communities} communities detected  "
           f"(modularity Q = {modularity:.4f})")
 
     nx.set_node_attributes(G, partition, "community")
