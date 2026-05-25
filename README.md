@@ -1,7 +1,3 @@
-# Polarized-Emotional-Communities-Around-AI-Job-Replacement-and-Who-Are-the-Influential-Users-
-
-
-
 # SMNA Assignment 2
 ## Do Polarized Emotional Communities Form Around AI Job Replacement Discussions on YouTube, and Who Are the Influential Users Shaping These Communities?
 
@@ -210,10 +206,10 @@ Run all cells from top to bottom.
 Do polarized emotional communities form around AI job replacement discussions on YouTube, and who are the influential users shaping these communities?
 
 **Success Criteria:**
-1. At least 2 distinct communities detected with significantly different mean sentiment scores
-2.  Identifiable Bridge users (high betweenness) connecting otherwise separate communities
-3. Topic modelling reveals distinct frames (fear vs optimism vs policy) across communities
-4. Cross-platform comparison shows whether YouTube and Bluesky communities differ in polarisation level
+1. ✅ At least 2 distinct communities detected with significantly different mean sentiment scores
+2. ✅ Identifiable Bridge users (high betweenness) connecting otherwise separate communities
+3. ✅ Topic modelling reveals distinct frames (fear vs optimism vs policy) across communities
+4. ✅ Cross-platform comparison shows whether YouTube and Bluesky communities differ in polarisation level
 
 ---
 
@@ -221,7 +217,7 @@ Do polarized emotional communities form around AI job replacement discussions on
 
 - All code is original work using standard open-source libraries
 - External packages (NetworkX, VADER, scikit-learn) are acknowledged
-- No API keys or private credentials are to be committed to repositories
+- No API keys or private credentials should be committed to repositories
 - Sample data is synthetic but representative; real data is collected via official APIs under platform ToS
 
 ---
