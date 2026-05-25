@@ -63,7 +63,7 @@ class TopicModeller:
         valid_texts = [t for t, m in zip(texts, valid_mask) if m]
 
         if len(valid_texts) < self.n_topics * 2:
-            print(f"  ⚠️  Too few documents for LDA ({len(valid_texts)}). Skipping.")
+            print(f"    Too few documents for LDA ({len(valid_texts)}). Skipping.")
             dom_col = f"{prefix}_dominant_topic" if prefix else "dominant_topic"
             df[dom_col] = -1
             return df, {}
